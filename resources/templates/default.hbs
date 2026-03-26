@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{report.title}}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #1a1a1a; padding: 2rem; background: #fff; }
+        .header { margin-bottom: 1.5rem; }
+        .header h1 { font-size: 1.5rem; font-weight: 600; }
+        .header p { color: #666; font-size: 0.875rem; margin-top: 0.25rem; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+        thead th { text-align: left; padding: 0.625rem 0.75rem; border-bottom: 2px solid #e5e5e5; font-weight: 600; color: #374151; white-space: nowrap; }
+        tbody td { padding: 0.5rem 0.75rem; border-bottom: 1px solid #f0f0f0; }
+        tbody tr:hover { background: #f9fafb; }
+        .footer { margin-top: 1rem; font-size: 0.75rem; color: #999; display: flex; justify-content: space-between; }
+        @media print { body { padding: 0; } .footer { position: fixed; bottom: 0; width: 100%; } }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>{{report.title}}</h1>
+        {{#if report.description}}<p>{{report.description}}</p>{{/if}}
+    </div>
+    <table>
+        <thead>
+            <tr>
+                {{#each columns}}<th>{{label}}</th>{{/each}}
+            </tr>
+        </thead>
+        <tbody>
+            {{#each rows}}
+            <tr>
+                {{#each ../columns}}<td>{{lookup ../this key}}</td>{{/each}}
+            </tr>
+            {{/each}}
+        </tbody>
+    </table>
+    <div class="footer">
+        <span>Page {{meta.page}} of {{meta.last_page}} &middot; {{meta.total}} records</span>
+        <span>Generated: {{generated_at}}</span>
+    </div>
+</body>
+</html>

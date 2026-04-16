@@ -11,14 +11,14 @@
     ],
     "require": {
         "php": "^8.2",
-        "illuminate/support": "^11.0 || ^12.0",
-        "illuminate/database": "^11.0 || ^12.0",
+        "illuminate/support": "^11.0 || ^12.0 || ^13.0",
+        "illuminate/database": "^11.0 || ^12.0 || ^13.0",
         "spatie/laravel-data": "^4.0",
         "symfony/yaml": "^7.0",
         "zordius/lightncandy": "^1.2"
     },
     "require-dev": {
-        "orchestra/testbench": "^9.0 || ^10.0",
+        "orchestra/testbench": "^9.0 || ^10.0 || ^11.0",
         "pestphp/pest": "^3.0"
     },
     "autoload": {
@@ -37,6 +37,10 @@
                 "LBHurtado\\ReportRegistry\\ReportRegistryServiceProvider"
             ]
         }
+    },
+    "scripts": {
+        "test": "vendor/bin/pest",
+        "test:coverage": "vendor/bin/pest --coverage"
     },
     "config": {
         "sort-packages": true,

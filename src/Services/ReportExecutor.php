@@ -12,7 +12,14 @@ class ReportExecutor
     ) {}
 
     /**
-     * Execute a report: load driver → resolve data → format output.
+     * Execute a report.
+     *
+     * Contract:
+     * - raw  => structured PHP array
+     * - json => rendered JSON string
+     * - html => rendered HTML string
+     * - csv  => rendered CSV string
+     * - text => rendered text string
      */
     public function execute(
         string $driverId,
@@ -23,26 +30,34 @@ class ReportExecutor
         ?string $sortDirection = null,
         ?int $perPage = null,
         int $page = 1,
-    ): string|array {
+    ): array|string {
         $driver = $this->registry->driver($driverId, $version);
 
-        $resolver = $this->resolveResolver($driver);
-
-        $result = $resolver->resolve(
+        $resolved = $this->resolveData(
+            driverId: $driverId,
+            version: $version,
             filters: $filters,
-            sort: $sort ?? $driver->defaultSort,
-            sortDirection: $sortDirection ?? $driver->defaultSortDirection,
-            perPage: $perPage ?? $driver->defaultPerPage,
+            sort: $sort,
+            sortDirection: $sortDirection,
+            perPage: $perPage,
             page: $page,
         );
 
+        if ($format === 'raw') {
+            return $this->buildPayload($driver, $resolved);
+        }
+
         $formatter = $this->registry->formatter($format);
 
-        return $formatter->format($driver, $result['data'], $result['meta']);
+        return $formatter->format(
+            $driver,
+            $resolved['data'] ?? [],
+            $resolved['meta'] ?? [],
+        );
     }
 
     /**
-     * Execute and return raw data (no formatting).
+     * Execute and return raw resolved data from the resolver only.
      */
     public function resolveData(
         string $driverId,
@@ -78,5 +93,21 @@ class ReportExecutor
         }
 
         return $resolver;
+    }
+
+    protected function buildPayload(ReportDriverData $driver, array $resolved): array
+    {
+        return [
+            'report' => [
+                'id' => $driver->id,
+                'title' => $driver->title,
+                'description' => $driver->description,
+                'group' => $driver->group,
+                'columns' => array_map(fn ($col) => $col->toArray(), $driver->columns),
+                'filters' => array_map(fn ($filter) => $filter->toArray(), $driver->filters),
+            ],
+            'data' => $resolved['data'] ?? [],
+            'meta' => $resolved['meta'] ?? [],
+        ];
     }
 }

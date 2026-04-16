@@ -1,0 +1,18 @@
+driver:
+  id: sales
+  version: 1.0.0
+  title: Sales Report
+  description: Base sales report
+  group: finance
+resolver: LBHurtado\ReportRegistry\Tests\Support\FakeSalesReportResolver
+columns:
+  - key: reference
+    label: Reference
+  - key: amount
+    label: Amount
+defaults:
+  sort: created_at
+  sort_direction: asc
+  per_page: 25
+templates:
+  html: sales.hbs

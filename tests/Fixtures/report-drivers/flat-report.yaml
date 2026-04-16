@@ -1,0 +1,8 @@
+driver:
+  id: flat-report
+  version: 1.0.0
+  title: Flat Report
+resolver: LBHurtado\ReportRegistry\Tests\Support\FakeSalesReportResolver
+columns:
+  - key: reference
+    label: Reference

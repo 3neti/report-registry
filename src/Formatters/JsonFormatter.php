@@ -7,9 +7,9 @@ use LBHurtado\ReportRegistry\Data\ReportDriverData;
 
 class JsonFormatter implements ReportFormatterInterface
 {
-    public function format(ReportDriverData $driver, array $data, array $meta): string|array
+    public function format(ReportDriverData $driver, array $data, array $meta): string
     {
-        return [
+        return json_encode([
             'report' => [
                 'id' => $driver->id,
                 'title' => $driver->title,
@@ -20,7 +20,7 @@ class JsonFormatter implements ReportFormatterInterface
             ],
             'data' => $data,
             'meta' => $meta,
-        ];
+        ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
 
     public function contentType(): string

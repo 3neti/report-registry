@@ -54,7 +54,7 @@ class ReportDriverService
         $data = Yaml::parse($content);
 
         if (isset($data['extends'])) {
-            $data = $this->resolveComposition($data, [$driverId]);
+            $data = $this->resolveComposition($data, [$this->normalizeDriverRef($driverId, $version)]);
         }
 
         return $this->parseDriver($data, $driverId);
@@ -73,16 +73,17 @@ class ReportDriverService
 
         foreach ($extends as $parentRef) {
             [$parentId, $parentVersion] = $this->parseDriverRef($parentRef);
+            $normalizedParentRef = $this->normalizeDriverRef($parentId, $parentVersion);
 
-            if (in_array($parentId, $resolved)) {
-                throw new \RuntimeException("Circular dependency: ".implode(' -> ', [...$resolved, $parentId]));
+            if (in_array($normalizedParentRef, $resolved, true)) {
+                throw new \RuntimeException('Circular dependency: '.implode(' -> ', [...$resolved, $normalizedParentRef]));
             }
 
             $parentPath = $this->resolveDriverPath($parentId, $parentVersion);
             $parentData = Yaml::parse($this->disk()->get($parentPath));
 
             if (isset($parentData['extends'])) {
-                $parentData = $this->resolveComposition($parentData, [...$resolved, $parentId]);
+                $parentData = $this->resolveComposition($parentData, [...$resolved, $normalizedParentRef]);
             }
 
             $merged = $this->mergeDrivers($merged, $parentData);
@@ -102,6 +103,11 @@ class ReportDriverService
         return [$ref, null];
     }
 
+    protected function normalizeDriverRef(string $driverId, ?string $version = null): string
+    {
+        return $version ? sprintf('%s@%s', $driverId, $version) : $driverId;
+    }
+
     protected function mergeDrivers(array $base, array $overlay): array
     {
         if (empty($base)) {
@@ -114,27 +120,22 @@ class ReportDriverService
             $result['driver'] = array_merge($result['driver'] ?? [], $overlay['driver']);
         }
 
-        // Columns: overlay replaces entirely if present
         if (isset($overlay['columns'])) {
             $result['columns'] = $overlay['columns'];
         }
 
-        // Filters: overlay replaces entirely if present
         if (isset($overlay['filters'])) {
             $result['filters'] = $overlay['filters'];
         }
 
-        // Defaults: merge
         if (isset($overlay['defaults'])) {
             $result['defaults'] = array_merge($result['defaults'] ?? [], $overlay['defaults']);
         }
 
-        // Resolver: overlay wins
         if (isset($overlay['resolver'])) {
             $result['resolver'] = $overlay['resolver'];
         }
 
-        // Templates: merge
         if (isset($overlay['templates'])) {
             $result['templates'] = array_merge($result['templates'] ?? [], $overlay['templates']);
         }
@@ -151,10 +152,15 @@ class ReportDriverService
             }
         }
 
-        $files = $this->disk()->files($driverId);
-        $versionFiles = array_filter($files, fn ($f) => preg_match('/v[\d.]+\.yaml$/', $f));
+        $files = $this->disk()->exists($driverId) ? $this->disk()->files($driverId) : [];
+        $versionFiles = array_values(array_filter($files, fn ($f) => preg_match('/v[\d.]+\.yaml$/', basename($f))));
         if (! empty($versionFiles)) {
-            usort($versionFiles, 'version_compare');
+            usort($versionFiles, function (string $a, string $b): int {
+                preg_match('/v([\d.]+)\.yaml$/', basename($a), $am);
+                preg_match('/v([\d.]+)\.yaml$/', basename($b), $bm);
+
+                return version_compare($am[1] ?? '0.0.0', $bm[1] ?? '0.0.0');
+            });
 
             return end($versionFiles);
         }
@@ -173,12 +179,22 @@ class ReportDriverService
         $defaults = $data['defaults'] ?? [];
 
         $columns = array_map(
-            fn ($col) => ColumnData::from($col),
+            fn (array $col) => new ColumnData(
+                key: $col['key'],
+                label: $col['label'],
+                type: $col['type'] ?? 'text',
+                sortable: $col['sortable'] ?? false,
+            ),
             $data['columns'] ?? [],
         );
 
         $filters = array_map(
-            fn ($f) => FilterData::from($f),
+            fn (array $filter) => new FilterData(
+                key: $filter['key'],
+                label: $filter['label'],
+                type: $filter['type'] ?? 'text',
+                options: $filter['options'] ?? null,
+            ),
             $data['filters'] ?? [],
         );
 

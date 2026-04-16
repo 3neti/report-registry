@@ -27,6 +27,11 @@ class ReportDriverService
 
     /**
      * Load a driver by ID with optional version.
+     *
+     * Cache strategy:
+     * - cache only normalized array payloads
+     * - never cache ReportDriverData objects directly
+     * - always rebuild DTOs fresh on retrieval
      */
     public function load(string $driverId, ?string $version = null): ReportDriverData
     {
@@ -36,28 +41,55 @@ class ReportDriverService
             return $this->loaded[$cacheKey];
         }
 
-        $ttl = config('report-registry.cache_ttl', 3600);
+        $ttl = (int) config('report-registry.cache_ttl', 3600);
 
-        $driver = $ttl > 0
-            ? Cache::remember($cacheKey, $ttl, fn () => $this->loadFromFile($driverId, $version))
-            : $this->loadFromFile($driverId, $version);
+        if ($ttl > 0) {
+            $payload = Cache::remember($cacheKey, $ttl, fn (): array => $this->loadPayloadFromFile($driverId, $version));
+        } else {
+            $payload = $this->loadPayloadFromFile($driverId, $version);
+        }
+
+        // Defensive guard for old/stale cache entries created before this fix.
+        if ($payload instanceof ReportDriverData) {
+            Cache::forget($cacheKey);
+            $payload = $this->loadPayloadFromFile($driverId, $version);
+        }
+
+        if (is_object($payload) && $payload instanceof \__PHP_Incomplete_Class) {
+            Cache::forget($cacheKey);
+            $payload = $this->loadPayloadFromFile($driverId, $version);
+        }
+
+        if (! is_array($payload)) {
+            Cache::forget($cacheKey);
+            throw new \RuntimeException("Unable to load report driver payload: {$driverId}");
+        }
+
+        $driver = $this->parseDriver($payload, $driverId);
 
         $this->loaded[$cacheKey] = $driver;
 
         return $driver;
     }
 
-    protected function loadFromFile(string $driverId, ?string $version = null): ReportDriverData
+    /**
+     * Load and normalize raw driver payload from disk.
+     */
+    protected function loadPayloadFromFile(string $driverId, ?string $version = null): array
     {
         $path = $this->resolveDriverPath($driverId, $version);
         $content = $this->disk()->get($path);
         $data = Yaml::parse($content);
 
+        if (! is_array($data)) {
+            throw new \RuntimeException("Invalid YAML driver definition for [{$driverId}]");
+        }
+
         if (isset($data['extends'])) {
             $data = $this->resolveComposition($data, [$this->normalizeDriverRef($driverId, $version)]);
         }
 
-        return $this->parseDriver($data, $driverId);
+        return $data;
     }
 
     protected function resolveComposition(array $data, array $resolved = []): array
@@ -81,6 +113,10 @@ class ReportDriverService
 
             $parentPath = $this->resolveDriverPath($parentId, $parentVersion);
             $parentData = Yaml::parse($this->disk()->get($parentPath));
+
+            if (! is_array($parentData)) {
+                throw new \RuntimeException("Invalid YAML driver definition for [{$normalizedParentRef}]");
+            }
 
             if (isset($parentData['extends'])) {
                 $parentData = $this->resolveComposition($parentData, [...$resolved, $normalizedParentRef]);

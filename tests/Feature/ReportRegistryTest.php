@@ -37,3 +37,16 @@ it('loads flat report drivers when no versioned directory exists', function () {
         ->and($driver->version)->toBe('1.0.0')
         ->and($driver->columns)->toHaveCount(1);
 });
+
+it('rebuilds report driver DTOs from cached array payloads', function () {
+    $service = app(\LBHurtado\ReportRegistry\Services\ReportDriverService::class);
+
+    $first = $service->load('sales');
+    $service->clearCache();
+
+    $second = $service->load('sales');
+
+    expect($first)->toBeInstanceOf(\LBHurtado\ReportRegistry\Data\ReportDriverData::class)
+        ->and($second)->toBeInstanceOf(\LBHurtado\ReportRegistry\Data\ReportDriverData::class)
+        ->and($second->id)->toBe('sales');
+});

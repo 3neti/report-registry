@@ -1,9 +1,11 @@
 <?php
 
+use LBHurtado\ReportRegistry\Data\ReportDriverData;
 use LBHurtado\ReportRegistry\Formatters\CsvFormatter;
 use LBHurtado\ReportRegistry\Formatters\HtmlFormatter;
 use LBHurtado\ReportRegistry\Formatters\JsonFormatter;
 use LBHurtado\ReportRegistry\Formatters\TextFormatter;
+use LBHurtado\ReportRegistry\Services\ReportDriverService;
 use LBHurtado\ReportRegistry\Services\ReportRegistry;
 
 it('registers the built in report formatters', function () {
@@ -39,14 +41,14 @@ it('loads flat report drivers when no versioned directory exists', function () {
 });
 
 it('rebuilds report driver DTOs from cached array payloads', function () {
-    $service = app(\LBHurtado\ReportRegistry\Services\ReportDriverService::class);
+    $service = app(ReportDriverService::class);
 
     $first = $service->load('sales');
     $service->clearCache();
 
     $second = $service->load('sales');
 
-    expect($first)->toBeInstanceOf(\LBHurtado\ReportRegistry\Data\ReportDriverData::class)
-        ->and($second)->toBeInstanceOf(\LBHurtado\ReportRegistry\Data\ReportDriverData::class)
+    expect($first)->toBeInstanceOf(ReportDriverData::class)
+        ->and($second)->toBeInstanceOf(ReportDriverData::class)
         ->and($second->id)->toBe('sales');
 });

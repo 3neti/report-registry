@@ -16,6 +16,16 @@ It provides:
 
 ---
 
+## Installation
+
+```bash
+composer require 3neti/report-registry:^1.1
+```
+
+Laravel discovers the package service provider automatically.
+
+---
+
 ## Key Concepts
 
 ### Report Driver
@@ -202,6 +212,9 @@ resolver: App\Reports\SalesReportResolver
 ---
 
 ## Testing
+
+The current release matrix covers PHP 8.3 and 8.4 on Laravel 12
+and 13. Laravel 11 remains supported by the package constraints.
 
 Run tests:
 

@@ -277,6 +277,10 @@ class ReportDriverService
 
     public function clearCache(): void
     {
+        foreach (array_keys($this->loaded) as $cacheKey) {
+            Cache::forget($cacheKey);
+        }
+
         $this->loaded = [];
     }
 }

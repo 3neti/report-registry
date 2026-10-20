@@ -9,7 +9,12 @@ class ReportExecutor
 {
     public function __construct(
         protected ReportRegistry $registry,
-    ) {}
+        ?ReportPayloadBuilder $payloadBuilder = null,
+    ) {
+        $this->payloadBuilder = $payloadBuilder ?? new ReportPayloadBuilder;
+    }
+
+    protected ReportPayloadBuilder $payloadBuilder;
 
     /**
      * Execute a report.
@@ -97,17 +102,10 @@ class ReportExecutor
 
     protected function buildPayload(ReportDriverData $driver, array $resolved): array
     {
-        return [
-            'report' => [
-                'id' => $driver->id,
-                'title' => $driver->title,
-                'description' => $driver->description,
-                'group' => $driver->group,
-                'columns' => array_map(fn ($col) => $col->toArray(), $driver->columns),
-                'filters' => array_map(fn ($filter) => $filter->toArray(), $driver->filters),
-            ],
-            'data' => $resolved['data'] ?? [],
-            'meta' => $resolved['meta'] ?? [],
-        ];
+        return $this->payloadBuilder->build(
+            driver: $driver,
+            data: $resolved['data'] ?? [],
+            meta: $resolved['meta'] ?? [],
+        );
     }
 }

@@ -52,3 +52,21 @@ it('rebuilds report driver DTOs from cached array payloads', function () {
         ->and($second)->toBeInstanceOf(ReportDriverData::class)
         ->and($second->id)->toBe('sales');
 });
+
+it('clears persisted driver cache entries as well as in-memory entries', function () {
+    config()->set('report-registry.cache_ttl', 3600);
+
+    $service = app(ReportDriverService::class);
+    $service->load('sales');
+
+    expect(cache()->has('report_driver:sales:'))->toBeTrue();
+
+    $service->clearCache();
+
+    expect(cache()->has('report_driver:sales:'))->toBeFalse();
+});
+
+it('rejects circular driver composition', function () {
+    expect(fn () => app(ReportRegistry::class)->driver('circular', '1.0.0'))
+        ->toThrow(RuntimeException::class, 'Circular dependency');
+});

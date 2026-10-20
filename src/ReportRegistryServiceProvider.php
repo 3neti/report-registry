@@ -13,6 +13,7 @@ use LBHurtado\ReportRegistry\Formatters\TextFormatter;
 use LBHurtado\ReportRegistry\Services\HandlebarsEngine;
 use LBHurtado\ReportRegistry\Services\ReportDriverService;
 use LBHurtado\ReportRegistry\Services\ReportExecutor;
+use LBHurtado\ReportRegistry\Services\ReportPayloadBuilder;
 use LBHurtado\ReportRegistry\Services\ReportRegistry;
 
 class ReportRegistryServiceProvider extends ServiceProvider
@@ -42,6 +43,7 @@ class ReportRegistryServiceProvider extends ServiceProvider
         $this->app->singleton(ReportExecutor::class, function ($app) {
             return new ReportExecutor(
                 registry: $app->make(ReportRegistry::class),
+                payloadBuilder: $app->make(ReportPayloadBuilder::class),
             );
         });
     }
@@ -67,7 +69,7 @@ class ReportRegistryServiceProvider extends ServiceProvider
 
     protected function registerBuiltInFormatters(ReportRegistry $registry, $app): void
     {
-        $registry->registerFormatter('json', new JsonFormatter);
+        $registry->registerFormatter('json', new JsonFormatter($app->make(ReportPayloadBuilder::class)));
         $registry->registerFormatter('csv', new CsvFormatter);
         $registry->registerFormatter('text', new TextFormatter);
         $registry->registerFormatter('html', new HtmlFormatter($app->make(HandlebarsEngine::class)));

@@ -26,6 +26,14 @@ Laravel discovers the package service provider automatically.
 
 ---
 
+## Documentation
+
+- [Drivers](docs/DRIVERS.md)
+- [Resolvers](docs/RESOLVERS.md)
+- [Formatters and templates](docs/FORMATTERS.md)
+- [Artisan commands](docs/CLI.md)
+- [Package compass](docs/COMPASS.md)
+
 ## Key Concepts
 
 ### Report Driver

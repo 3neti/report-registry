@@ -13,6 +13,7 @@ it('returns a canonical payload array for raw format', function () {
         ->and($result)->toHaveKeys(['report', 'data', 'meta'])
         ->and($result['report'])->toMatchArray([
             'id' => 'sales',
+            'version' => '1.1.0',
             'title' => 'Sales Report v1.1',
             'description' => 'Base sales report',
             'group' => 'finance',
@@ -46,6 +47,7 @@ it('executes a report and formats it as json', function () {
         ->and($decoded)->toBeArray()
         ->and($decoded['report'])->toMatchArray([
             'id' => 'sales',
+            'version' => '1.1.0',
             'title' => 'Sales Report v1.1',
             'description' => 'Base sales report',
             'group' => 'finance',
